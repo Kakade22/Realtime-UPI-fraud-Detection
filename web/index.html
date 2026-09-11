@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UPI Shield AI - Real-Time Fraud Detection & Instant Alert System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="brand-section">
+      <div class="logo-shield">
+        <span class="shield-icon">🛡️</span>
+        <div class="pulse-ring"></div>
+      </div>
+      <div class="brand-text">
+        <h1>UPI SHIELD <span class="badge-ai">AI 2.0</span></h1>
+        <p class="subtitle">Unified Payments Interface Real-Time Anomaly & Fraud Defense</p>
+      </div>
+    </div>
+
+    <div class="nav-metrics">
+      <div class="live-status-pill online" id="ws-status-pill">
+        <span class="pulse-dot"></span>
+        <span id="ws-status-text">Connecting to Live Node...</span>
+      </div>
+      <div class="telemetry-pill">
+        <span class="pill-label">SLA Latency:</span>
+        <span class="pill-val" id="top-latency">0.42 ms</span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="btn btn-stream" id="btn-toggle-stream" onclick="toggleStream()">
+        <span id="stream-btn-icon">▶</span>
+        <span id="stream-btn-text">Start Live Stream</span>
+      </button>
+      <button class="btn btn-custom-txn" onclick="openCustomTxnModal()">
+        <span>➕</span> Test Custom Txn
+      </button>
+      <button class="btn btn-audio" id="btn-sound-toggle" onclick="toggleAudioAlerts()" title="Toggle Audible Fraud Sirens">
+        <span id="sound-icon">🔊</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Grid Dashboard -->
+  <main class="dashboard-container">
+    
+    <!-- Top Metric Overview Cards -->
+    <section class="metrics-grid">
+      <div class="metric-card card-cyan">
+        <div class="card-icon">⚡</div>
+        <div class="card-info">
+          <span class="metric-title">Transactions Evaluated</span>
+          <h2 class="metric-value" id="kpi-total-txns">10,000</h2>
+          <span class="metric-sub" id="kpi-stream-rate">Real-Time Ingestion Active</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-crimson">
+        <div class="card-icon">🛑</div>
+        <div class="card-info">
+          <span class="metric-title">Frauds Intercepted</span>
+          <h2 class="metric-value" id="kpi-frauds-caught">550</h2>
+          <span class="metric-sub" id="kpi-fraud-rate"><span class="badge-red">5.50%</span> of total volume</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-amber">
+        <div class="card-icon">💰</div>
+        <div class="card-info">
+          <span class="metric-title">Capital Protected</span>
+          <h2 class="metric-value" id="kpi-capital-blocked">₹ 3,42,85,000</h2>
+          <span class="metric-sub">Blocked in Pre-Settlement</span>
+        </div>
+      </div>
+
+      <div class="metric-card card-emerald">
+        <div class="card-icon">🧠</div>
+        <div class="card-info">
+          <span class="metric-title">Ensemble Accuracy / AUC</span>
+          <h2 class="metric-value" id="kpi-model-auc">98.8% <span class="sub-auc">(0.994)</span></h2>
+          <span class="metric-sub">IsoForest + TimeSeries + IQR</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1-Click Scenario Injector Ribbon -->
+    <section class="scenario-ribbon">
+      <div class="ribbon-label">
+        <span class="bolt-icon">⚡</span>
+        <span>1-Click Fraud Test Scenarios:</span>
+      </div>
+      <div class="scenario-buttons">
+        <button class="btn-scenario safe" onclick="injectScenario('safe_chai')">
+          <span class="icon">☕</span>
+          <div class="btn-desc">
+            <strong>Safe Kirana / Chai</strong>
+            <small>₹35 • Mumbai • 4G Verified</small>
+          </div>
+        </button>
+
+        <button class="btn-scenario fraud" onclick="injectScenario('impossible_travel')">
+          <span class="icon">✈️</span>
+          <div class="btn-desc">
+            <strong>Impossible Travel Jump</strong>
+            <small>₹45,000 • London • 1,200 km/h</small>
+          </div>
+        </button>
+
+        <button class="btn-scenario fraud" onclick="injectScenario('velocity_drain')">
+          <span class="icon">⚡</span>
+          <div class="btn-desc">
+            <strong>Rapid Velocity Drain</strong>
+            <small>5x ₹60,000 • 30s Cascade</small>
+          </div>
+        </button>
+
+        <button class="btn-scenario warn" onclick="injectScenario('dormant_night')">
+          <span class="icon">🌙</span>
+          <div class="btn-desc">
+            <strong>03:15 AM Dormant Spike</strong>
+            <small>₹85,000 • Off-Peak Outlier</small>
+          </div>
+        </button>
+
+        <button class="btn-scenario fraud" onclick="injectScenario('phishing_qr')">
+          <span class="icon">🎣</span>
+          <div class="btn-desc">
+            <strong>Cashback QR Collect Scam</strong>
+            <small>₹24,999 • Fake Collect Req</small>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Core Interactive Workspace: Left = Live Stream & Radar, Right = Simulated Mobile App -->
+    <div class="workspace-grid">
+      
+      <!-- Left Column: Live Stream Feed & Explainability Hub -->
+      <div class="feed-column">
+        
+        <!-- Live Transaction Stream Card -->
+        <div class="panel-card stream-panel">
+          <div class="panel-header">
+            <div class="header-left">
+              <span class="live-indicator"></span>
+              <h3>Live UPI Transaction Feed</h3>
+              <span class="tag-counter" id="stream-counter-tag">25 displayed</span>
+            </div>
+            <div class="header-controls">
+              <span class="speed-label">Speed:</span>
+              <input type="range" id="stream-speed-slider" min="300" max="3000" step="100" value="1200" onchange="updateStreamSpeed(this.value)">
+              <span id="speed-val-display">1.2s</span>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="live-table" id="transactions-table">
+              <thead>
+                <tr>
+                  <th>Time / ID</th>
+                  <th>Sender</th>
+                  <th>Receiver</th>
+                  <th>Amount</th>
+                  <th>Type</th>
+                  <th>City</th>
+                  <th>Risk Score</th>
+                  <th>Action</th>
+                  <th>Inspect</th>
+                </tr>
+              </thead>
+              <tbody id="live-feed-body">
+                <!-- Populated dynamically via WebSocket / REST -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Anomaly Technique Comparison & Model Telemetry Panel -->
+        <div class="panel-card models-panel">
+          <div class="panel-header">
+            <h3>🔬 Multi-Technique Anomaly Detection Engine</h3>
+            <div class="tab-selectors">
+              <button class="tab-btn active" onclick="switchModelTab('models-benchmark')">Benchmark Metrics</button>
+              <button class="tab-btn" onclick="switchModelTab('models-explain')">Explainability Radar</button>
+              <button class="tab-btn" onclick="switchModelTab('dataset-view')">10K Dataset Explorer</button>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-models-benchmark">
+            <div class="benchmark-grid">
+              
+              <!-- Technique 1: Simple IQR -->
+              <div class="technique-card">
+                <div class="tech-header">
+                  <span class="tech-badge iqr">Technique 1</span>
+                  <h4>Simple IQR Outlier Technique</h4>
+                </div>
+                <p class="tech-summary">Distributional quantile bounds (Q1, Q3, 1.5×IQR) for amount, ratio, and mobility speed.</p>
+                <div class="metric-row">
+                  <span>Accuracy:</span> <strong id="iqr-acc">80.3%</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Recall:</span> <strong id="iqr-rec" class="text-emerald">100.0%</strong>
+                </div>
+                <div class="metric-row">
+                  <span>ROC-AUC:</span> <strong id="iqr-auc">0.934</strong>
+                </div>
+                <div class="tech-strength">
+                  <span class="check">✔</span> Deterministic & explainable bounding
+                </div>
+              </div>
+
+              <!-- Technique 2: Isolation Forest -->
+              <div class="technique-card highlighted">
+                <div class="tech-header">
+                  <span class="tech-badge iso">Technique 2</span>
+                  <h4>Isolation Forest</h4>
+                </div>
+                <p class="tech-summary">Unsupervised decision trees isolating anomalies across 13 engineered feature dimensions.</p>
+                <div class="metric-row">
+                  <span>Accuracy:</span> <strong id="iso-acc" class="text-emerald">98.8%</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Precision:</span> <strong id="iso-prec" class="text-emerald">93.7%</strong>
+                </div>
+                <div class="metric-row">
+                  <span>ROC-AUC:</span> <strong id="iso-auc" class="text-emerald">0.994</strong>
+                </div>
+                <div class="tech-strength">
+                  <span class="check">✔</span> High-dimensional pattern detection
+                </div>
+              </div>
+
+              <!-- Technique 3: Time Series -->
+              <div class="technique-card">
+                <div class="tech-header">
+                  <span class="tech-badge ts">Technique 3</span>
+                  <h4>Time Series Rolling Velocity</h4>
+                </div>
+                <p class="tech-summary">EWMA, sliding inter-arrival timing, burstiness index, and nocturnal quiet-hour deviations.</p>
+                <div class="metric-row">
+                  <span>Accuracy:</span> <strong id="ts-acc">94.1%</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Precision:</span> <strong id="ts-prec">40.5%</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Burst Detection:</span> <strong class="text-cyan">&lt; 30s Cascades</strong>
+                </div>
+                <div class="tech-strength">
+                  <span class="check">✔</span> Catches rapid account takeovers
+                </div>
+              </div>
+
+              <!-- Master Hybrid Ensemble -->
+              <div class="technique-card master">
+                <div class="tech-header">
+                  <span class="tech-badge ens">Master Engine</span>
+                  <h4>Hybrid Guardrail Ensemble</h4>
+                </div>
+                <p class="tech-summary">Weighted model fusion (45% IsoForest + 30% TS + 25% IQR) with real-time heuristic security overrides.</p>
+                <div class="metric-row">
+                  <span>Composite Acc:</span> <strong id="ens-acc" class="text-emerald">96.3%</strong>
+                </div>
+                <div class="metric-row">
+                  <span>ROC-AUC:</span> <strong id="ens-auc" class="text-emerald">0.983</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Decision Latency:</span> <strong class="text-cyan">&lt; 0.5 ms</strong>
+                </div>
+                <div class="tech-strength">
+                  <span class="check">✔</span> Zero false negatives on critical attacks
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Explainability Tab -->
+          <div class="tab-content hidden" id="tab-models-explain">
+            <div class="explainability-view">
+              <div class="explain-detail-box" id="inspect-detail-box">
+                <div class="empty-state-text">
+                  <span>🔍 Select any transaction from the live table or click a scenario button to view deep model breakdown and feature attribution.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 10K Dataset Tab -->
+          <div class="tab-content hidden" id="tab-dataset-view">
+            <div class="dataset-controls">
+              <input type="text" id="dataset-search" placeholder="Search by UPI ID, City, or Name..." oninput="filterDatasetTable()">
+              <select id="dataset-fraud-filter" onchange="filterDatasetTable()">
+                <option value="ALL">All Fraud & Normal Types</option>
+                <option value="FRAUD_ONLY">Fraudulent Transactions Only</option>
+                <option value="IMPOSSIBLE_TRAVEL">Impossible Travel</option>
+                <option value="VELOCITY_DRAIN_BURST">Velocity Drain Burst</option>
+                <option value="LATE_NIGHT_DORMANT_SPIKE">Late Night Dormant Spike</option>
+                <option value="PHISHING_QR_COLLECT_SCAM">Phishing QR Collect Scam</option>
+                <option value="DEVICE_MISMATCH_MAX_TRANSFER">Device Mismatch Max Transfer</option>
+              </select>
+              <span class="dataset-stats-label" id="dataset-stats-label">10,000 Total Generated Records</span>
+            </div>
+            <div class="table-wrapper dataset-table-wrap">
+              <table class="live-table" id="dataset-explorer-table">
+                <thead>
+                  <tr>
+                    <th>Txn ID</th>
+                    <th>Timestamp</th>
+                    <th>Sender UPI</th>
+                    <th>Amount</th>
+                    <th>City</th>
+                    <th>Speed</th>
+                    <th>Device Trust</th>
+                    <th>Fraud Type</th>
+                  </tr>
+                </thead>
+                <tbody id="dataset-explorer-body">
+                  <!-- Loaded on tab switch -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Right Column: High-Fidelity Simulated Mobile UPI Client (User Instant Warning Experience) -->
+      <div class="mobile-column">
+        <div class="mobile-frame-container">
+          
+          <div class="mobile-device" id="mobile-device-shell">
+            <!-- Mobile Speaker & Camera Notch -->
+            <div class="notch">
+              <span class="camera"></span>
+              <span class="speaker"></span>
+            </div>
+
+            <!-- Mobile Status Bar -->
+            <div class="phone-status-bar">
+              <span class="phone-time" id="phone-clock">18:24</span>
+              <div class="phone-icons">
+                <span>5G 📶</span>
+                <span>🔋 94%</span>
+              </div>
+            </div>
+
+            <!-- Simulated UPI App Header -->
+            <div class="phone-app-header">
+              <div class="app-brand">
+                <span class="app-icon-badge">⚡</span>
+                <div>
+                  <h4>GPay / PhonePe UPI</h4>
+                  <small>Verified Secure UPI Bank Link</small>
+                </div>
+              </div>
+              <div class="user-avatar">RV</div>
+            </div>
+
+            <!-- Mobile Screen Body Content -->
+            <div class="phone-screen-body" id="phone-screen-body">
+              
+              <!-- Idle / Ready State -->
+              <div class="phone-idle-state" id="phone-idle-state">
+                <div class="scan-qr-visual">
+                  <div class="qr-box">
+                    <span class="qr-target">📱</span>
+                    <div class="laser-scanner"></div>
+                  </div>
+                  <h5>Scan & Pay Any UPI QR</h5>
+                  <p>Awaiting incoming transaction or 1-click test simulation...</p>
+                </div>
+
+                <div class="quick-contacts">
+                  <small class="section-label">Recent Contacts</small>
+                  <div class="contacts-row">
+                    <div class="contact-pill"><span class="c-av">☕</span>Chai</div>
+                    <div class="contact-pill"><span class="c-av">🍕</span>Swiggy</div>
+                    <div class="contact-pill"><span class="c-av">🛒</span>Blinkit</div>
+                    <div class="contact-pill"><span class="c-av">⚡</span>TataPower</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Transaction Flow State (Payment In-Flight) -->
+              <div class="phone-payment-state hidden" id="phone-payment-state">
+                <div class="paying-to-card">
+                  <span class="pay-avatar" id="sim-pay-avatar">🏪</span>
+                  <h4 id="sim-pay-name">Swiggy Orders</h4>
+                  <span class="pay-upi" id="sim-pay-upi">swiggy@hdfcbank</span>
+                  <h2 class="pay-amount" id="sim-pay-amt">₹ 450.00</h2>
+                </div>
+
+                <!-- Instant Warning Modal (Triggers on High Risk / Fraud) -->
+                <div class="instant-warning-card hidden" id="sim-instant-warning-card">
+                  <div class="warning-banner-top">
+                    <span class="siren-icon">🚨</span>
+                    <strong id="sim-warning-title">CRITICAL FRAUD INTERCEPTED</strong>
+                  </div>
+                  <div class="warning-body">
+                    <p class="warning-msg" id="sim-warning-msg">Transaction halted to protect your bank account.</p>
+                    <div class="reasons-bullet-list" id="sim-reasons-list">
+                      <!-- Bullet reasons -->
+                    </div>
+                    <div class="risk-meter-wrap">
+                      <div class="meter-label">
+                        <span>AI Anomaly Score:</span>
+                        <strong id="sim-risk-val">96/100 (CRITICAL)</strong>
+                      </div>
+                      <div class="meter-bar-track">
+                        <div class="meter-bar-fill" id="sim-meter-fill" style="width: 96%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="warning-actions">
+                    <button class="btn-lock-upi" onclick="acknowledgeMobileAlert()">🔒 Protect & Block Payee</button>
+                    <button class="btn-dismiss-sim" onclick="dismissMobileAlert()">Dismiss</button>
+                  </div>
+                </div>
+
+                <!-- Normal Approved State -->
+                <div class="normal-approved-card hidden" id="sim-normal-approved-card">
+                  <div class="success-check-circle">✔</div>
+                  <h4>Payment Successful</h4>
+                  <p>Transaction authorized instantly. Security Score: 100/100 (Verified Normal).</p>
+                  <button class="btn-done-sim" onclick="resetMobileScreen()">Done</button>
+                </div>
+
+                <!-- Caution Step-Up Prompt State -->
+                <div class="caution-warning-card hidden" id="sim-caution-card">
+                  <div class="caution-banner">
+                    <span>⚠️</span>
+                    <strong>Verify Recipient Identity</strong>
+                  </div>
+                  <p class="caution-desc" id="sim-caution-msg">Unusual transaction amount or new payee detected.</p>
+                  <div class="caution-actions">
+                    <button class="btn-verify-otp" onclick="acknowledgeMobileAlert()">Proceed with OTP Step-Up</button>
+                    <button class="btn-cancel-txn" onclick="dismissMobileAlert()">Cancel Payment</button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Mobile Home Indicator -->
+            <div class="phone-home-indicator"></div>
+          </div>
+
+          <div class="mobile-caption">
+            <span class="indicator-live-badge">⚡ Real-Time Device Simulator</span>
+            <p>Renders live user push notifications, audio sirens & anti-fraud step-ups triggered by the ML Engine.</p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Custom Transaction Modal -->
+  <div class="modal-overlay hidden" id="custom-txn-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🛠️ Inject Custom UPI Transaction</h3>
+        <button class="btn-close-modal" onclick="closeCustomTxnModal()">✕</button>
+      </div>
+      <form id="custom-txn-form" onsubmit="handleCustomTxnSubmit(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Sender UPI ID</label>
+            <input type="text" id="cust-sender-upi" value="rahul.verma@oksbi" required>
+          </div>
+          <div class="form-group">
+            <label>Sender Name</label>
+            <input type="text" id="cust-sender-name" value="Rahul Verma" required>
+          </div>
+          <div class="form-group">
+            <label>Receiver UPI ID</label>
+            <input type="text" id="cust-receiver-upi" value="fastdrain.mule@paytm" required>
+          </div>
+          <div class="form-group">
+            <label>Receiver Name</label>
+            <input type="text" id="cust-receiver-name" value="Mule Conduit X" required>
+          </div>
+          <div class="form-group">
+            <label>Amount (₹ INR)</label>
+            <input type="number" id="cust-amount" value="75000" min="1" max="100000" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label>Transaction Type</label>
+            <select id="cust-type">
+              <option value="P2P">P2P (Peer-to-Peer)</option>
+              <option value="P2M">P2M (Merchant Pay)</option>
+              <option value="QR_SCAN">QR Scan</option>
+              <option value="COLLECT_REQUEST">COLLECT_REQUEST (Collect Scam)</option>
+              <option value="BILL_PAY">Bill Pay</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Location City</label>
+            <select id="cust-city">
+              <option value="Mumbai">Mumbai</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Bengaluru">Bengaluru</option>
+              <option value="Hyderabad">Hyderabad</option>
+              <option value="Chennai">Chennai</option>
+              <option value="London">London (Overseas Anomaly)</option>
+              <option value="Lagos">Lagos (Overseas Anomaly)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Network Type</label>
+            <select id="cust-network">
+              <option value="4G">4G Mobile Data</option>
+              <option value="5G">5G Ultra Fast</option>
+              <option value="WIFI">Home/Office WiFi</option>
+              <option value="VPN_SUSPICIOUS">Suspicious VPN / Proxy</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Device Trust Score (0.0 to 1.0)</label>
+            <input type="number" id="cust-trust" value="0.25" min="0" max="1" step="0.05">
+          </div>
+          <div class="form-group">
+            <label>Failed PIN Attempts</label>
+            <input type="number" id="cust-pin-fails" value="2" min="0" max="5">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeCustomTxnModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">🚀 Send to Real-Time Model</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
